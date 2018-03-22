@@ -206,7 +206,7 @@ Adding or changing objects in a new scene will require to add/change the files h
  *  The file [`config/<new_scene>/poses.json`](thr_scenes/config/toolbox/poses.json) which describes, for its objects, a bunch of hardcoded poses relative to that object:
     * If the action has 2 objects involved there's a *master* and a *slave* object: the master is the host for the slave
     * In `poses.json`, hierarchy is *master first, then slave*, so if a table is a host for an object, browse the tree be looking the table, then its slave object
-    * For `PLACE`, the relative pose is the slave within the master's frame (use `rosrun tf tf_echo <slave> <master>` to update)
+    * For `PLACE`, the relative pose is the slave within the master's frame (use `rosrun tf tf_echo <master> <slave>` to update)
     * For `GRASP` or `PICK`, this relative pose is the robot's gripper within the object's frame (use `rosrun tf tf_echo right_gripper <object>` to update)
     * For `GIVE` or `BRING`, the relative pose is the robot's gripper within human wrist's frame
  *  The file [`config/<new_scene>/display.json`](thr_scenes/config/toolbox/display.json) which contains a very short user-friendly message to be displayed on Baxter's screen when `display:=action` is enabled. The integer -1 means 'look straight ahead', any other integer i>-1 means 'look at the object number #i in the parameters list 
