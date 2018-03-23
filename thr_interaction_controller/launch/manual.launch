@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="scene" default="toolbox"/>
+    <arg name="scene" default="pobax"/>
     <arg name="ip" default="BAXTERFLOWERS.local"/> <!-- IP of the VRPN server -->
     <arg name="port" default="3884" /> <!-- Port of the VRPN server (default 3883) -->
     <arg name="policy" default="hardcoded" /> <!-- Policy values: hardcoded, wait, normal -->
