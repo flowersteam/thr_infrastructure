@@ -2,6 +2,8 @@
 
 import rospy, json
 import actionlib
+import sys
+import zmq
 
 from thr_infrastructure_msgs.msg import *
 from thr_infrastructure_msgs.srv import *
@@ -9,13 +11,14 @@ from actionlib_msgs.msg import GoalStatus
 
 class InteractionController(object):
 
-    def __init__(self):
+    def __init__(self,comm_mode="woz"):
         self.running = True
         self.current_scene = None
         self.previous_decision = Decision(type='wait')
         self.scene_before_decision = None
         self.run_decision_name = '/thr/run_decision'
         self.scene_state_service = '/thr/scene_state'
+        self.comm_mode = comm_mode
 
         self.logs = []
 
@@ -29,6 +32,12 @@ class InteractionController(object):
             rospy.wait_for_service(service)
 
         self.start_or_stop_episode(True)  # Start a new (and unique) episode
+
+        if self.comm_mode == "socket":
+            # Initiating socket communication
+            context = zmq.Context()
+            self.socket = context.socket(zmq.PAIR)
+            self.socket.bind('tcp://127.0.0.1:5555')
 
     def start_or_stop_episode(self, start=True):
         for node in ['scene_state_manager', 'action_server']:
@@ -103,14 +112,27 @@ class InteractionController(object):
             else:
                 continue
 
+    def socket_entry(self):
+        command = self.socket.recv()
+        valid, type, parameters = self.preprocess_entry(command)
+        if valid:
+            return type, parameters
+
     ###################################################################################################################
 
-    def run(self):
-        rospy.loginfo('Manual interaction starting from keyboard!')
+    def run(self,comm_mode="woz"):
+        if self.comm_mode=="woz":
+            rospy.loginfo('Manual interaction starting from keyboard!')
+        elif self.comm_mode=="socket":
+            rospy.loginfo('Manual interaction using sockets!')            
         try:
             while self.running and not rospy.is_shutdown():
                 self.update_scene()
-                ret = self.wizard_entry()
+                if self.comm_mode == "woz":
+                    ret = self.wizard_entry()
+                elif self.comm_mode == "socket":
+                    ret = self.socket_entry()
+
                 if ret is not None:
                     type, params = ret
                     self.check_for_previous_decisions()  # user inputs are blocking for this setup so update action state at the last time
@@ -148,4 +170,4 @@ class InteractionController(object):
 
 if __name__=='__main__':
     rospy.init_node("interaction_controller")
-    InteractionController().run()
+    InteractionController(comm_mode=sys.argv[1]).run()
