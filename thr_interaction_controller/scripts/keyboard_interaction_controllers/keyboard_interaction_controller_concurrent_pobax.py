@@ -47,52 +47,61 @@ class InteractionController(object):
         except rospy.ServiceException, e:
             rospy.logerr("Cannot update scene {}:".format(e.message))
 
+
+    def preprocess_entry(self,raw_cmd):
+        command = raw_cmd.strip('\r\n').lower()
+        parameters = []
+        type = "wait"
+
+        if len(command)<1 or len(command)>4:
+                rospy.logerr("Invalid command {} (1a)".format(command))
+                return False,None,None
+        elif command[0] == 'l':
+            type = 'start_go_home_left'
+        elif command[0] == 'r':
+            type = 'start_go_home_right'
+        elif command[0] == 'g':
+            type = 'start_grasp'
+        elif command[0] == 'p':
+            type = 'start_place_right'
+        else:
+            rospy.logerr("Invalid command {} (1b)".format(command))
+            return False,None,None
+
+        if type in ['start_grasp']:
+            if len(command)<2:
+                rospy.logerr("Invalid command {} (2c)".format(command))
+                return False,None,None
+            elif command[1] == '1':
+                parameters.append('/culbuto/1')
+            elif command[1] == '2':
+                parameters.append('/culbuto/2')
+            else:
+                rospy.logerr("Invalid command {} (2d)".format(command))
+                return False,None,None
+
+        if type in ['start_place_right']:
+            if len(command)<2:
+                rospy.logerr("Invalid command {} (2e)".format(command))
+                return False,None,None
+            elif command[1] == '1':
+                parameters += ['/culbuto/1', '/table']
+            elif command[1] == '2':
+                parameters += ['/culbuto/2', '/table']
+            else:
+                rospy.logerr("Invalid command {} (2f)".format(command))
+                return False,None,None
+        
+        return True, type, parameters
+
     def wizard_entry(self):
         while not rospy.is_shutdown():
-            command = raw_input("> ").strip('\r\n').lower()
-            parameters = []
-            type = "wait"
-
-            if len(command)<1 or len(command)>4:
-                rospy.logerr("Invalid command {} (1a)".format(command))
-                continue
-            elif command[0] == 'l':
-                type = 'start_go_home_left'
-            elif command[0] == 'r':
-                type = 'start_go_home_right'
-            elif command[0] == 'g':
-                type = 'start_grasp'
-            elif command[0] == 'p':
-                type = 'start_place_right'
+            command = raw_input("> ")
+            valid, type, parameters = self.preprocess_entry(command)
+            if valid:
+                return type, parameters
             else:
-                rospy.logerr("Invalid command {} (1b)".format(command))
                 continue
-
-            if type in ['start_grasp']:
-                if len(command)<2:
-                    rospy.logerr("Invalid command {} (2c)".format(command))
-                    continue
-                elif command[1] == '1':
-                    parameters.append('/culbuto/1')
-                elif command[1] == '2':
-                    parameters.append('/culbuto/2')
-                else:
-                    rospy.logerr("Invalid command {} (2d)".format(command))
-                    continue
-
-            if type in ['start_place_right']:
-                if len(command)<2:
-                    rospy.logerr("Invalid command {} (2e)".format(command))
-                    continue
-                elif command[1] == '1':
-                    parameters += ['/culbuto/1', '/table']
-                elif command[1] == '2':
-                    parameters += ['/culbuto/2', '/table']
-                else:
-                    rospy.logerr("Invalid command {} (2f)".format(command))
-                    continue
-            
-            return type, parameters
 
     ###################################################################################################################
 
