@@ -4,10 +4,10 @@ project(thr_interaction_controller)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs)
+find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs message_generation message_runtime)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+# find_package(Boost REQUIRED COMPONENTS system roscpp rospy std_msgs message_generation)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -39,6 +39,10 @@ find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
+#find_package(message_generation)
+
+#add_service_files(FILES BaxterCommand.srv)
+
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
@@ -47,11 +51,10 @@ find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  BaxterCommand.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -61,10 +64,12 @@ find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
+
+catkin_package(CATKIN_DEPENDS std_msgs message_runtime message_generation)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -95,12 +100,12 @@ find_package(catkin REQUIRED thr_scenes thr_infrastructure_msgs)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
+#catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES thr_interaction_controller
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
-)
+#)
 
 ###########
 ## Build ##

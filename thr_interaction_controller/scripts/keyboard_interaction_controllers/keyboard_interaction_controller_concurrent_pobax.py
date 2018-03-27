@@ -3,10 +3,10 @@
 import rospy, json
 import actionlib
 import sys
-import zmq
 
 from thr_infrastructure_msgs.msg import *
 from thr_infrastructure_msgs.srv import *
+from thr_interaction_controller.srv import *
 from actionlib_msgs.msg import GoalStatus
 
 class InteractionController(object):
@@ -33,11 +33,10 @@ class InteractionController(object):
 
         self.start_or_stop_episode(True)  # Start a new (and unique) episode
 
-        if self.comm_mode == "socket":
-            # Initiating socket communication
-            context = zmq.Context()
-            self.socket = context.socket(zmq.PAIR)
-            self.socket.bind('tcp://127.0.0.1:5555')
+        if self.comm_mode == "ros":
+            # Init ROS service to send commands
+            s = rospy.Service('baxter_command', BaxterCommand, self.handle_baxter_command)
+            rospy.loginfo('Baxter interaction using ROS service!')   
 
     def start_or_stop_episode(self, start=True):
         for node in ['scene_state_manager', 'action_server']:
@@ -55,6 +54,28 @@ class InteractionController(object):
             self.current_scene = getscene(request).state
         except rospy.ServiceException, e:
             rospy.logerr("Cannot update scene {}:".format(e.message))
+
+
+    def handle_baxter_command(self,request): 
+        try:
+            self.update_scene()
+            print request.cmd
+            ret = self.preprocess_entry(request.cmd)
+            if ret is not None:
+                valid, type, params = ret
+                self.check_for_previous_decisions()  # user inputs are blocking for this setup so update action state at the last time
+                self.logs.append({'timestamp': rospy.get_time(),
+                                  'type': type,
+                                  'parameters': params})
+                decision = Decision(type=type, parameters=params)
+                self.run_decision(decision)
+        finally:
+            logs_name = rospy.get_param('/thr/logs_name')
+            if logs_name != "none":
+                with open('decisions_'+logs_name+'.json', 'w') as f:
+                    json.dump(self.logs, f)
+        return BaxterCommandResponse("TODO put_error_message_here")
+
 
 
     def preprocess_entry(self,raw_cmd):
@@ -112,27 +133,14 @@ class InteractionController(object):
             else:
                 continue
 
-    def socket_entry(self):
-        command = self.socket.recv()
-        valid, type, parameters = self.preprocess_entry(command)
-        if valid:
-            return type, parameters
-
     ###################################################################################################################
 
-    def run(self,comm_mode="woz"):
-        if self.comm_mode=="woz":
-            rospy.loginfo('Manual interaction starting from keyboard!')
-        elif self.comm_mode=="socket":
-            rospy.loginfo('Manual interaction using sockets!')            
+    def run(self):
+        rospy.loginfo('Manual interaction starting from keyboard!')
         try:
             while self.running and not rospy.is_shutdown():
                 self.update_scene()
-                if self.comm_mode == "woz":
-                    ret = self.wizard_entry()
-                elif self.comm_mode == "socket":
-                    ret = self.socket_entry()
-
+                ret = self.wizard_entry()
                 if ret is not None:
                     type, params = ret
                     self.check_for_previous_decisions()  # user inputs are blocking for this setup so update action state at the last time
@@ -147,7 +155,6 @@ class InteractionController(object):
             if logs_name != "none":
                 with open('decisions_'+logs_name+'.json', 'w') as f:
                     json.dump(self.logs, f)
-
 
     def run_decision(self, decision):
         if self.previous_decision.type== 'wait':
@@ -170,4 +177,9 @@ class InteractionController(object):
 
 if __name__=='__main__':
     rospy.init_node("interaction_controller")
-    InteractionController(comm_mode=sys.argv[1]).run()
+
+    if sys.argv[1] == "woz": #classical keyboard interaction
+        InteractionController(comm_mode=sys.argv[1]).run()
+    elif sys.argv[1] == "ros": #ros node providing a command service
+        InteractionController(comm_mode=sys.argv[1])
+        rospy.spin()
