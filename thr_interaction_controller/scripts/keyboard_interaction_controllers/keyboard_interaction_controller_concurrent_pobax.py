@@ -35,7 +35,7 @@ class InteractionController(object):
 
         if self.comm_mode == "ros":
             # Init ROS service to send commands
-            s = rospy.Service('baxter_command', BaxterCommand, self.handle_baxter_command)
+            s = rospy.Service('baxter_command', BaxterCommand, self.cb_baxter_command)
             rospy.loginfo('Baxter interaction using ROS service!')   
 
     def start_or_stop_episode(self, start=True):
@@ -56,7 +56,7 @@ class InteractionController(object):
             rospy.logerr("Cannot update scene {}:".format(e.message))
 
 
-    def handle_baxter_command(self,request): 
+    def cb_baxter_command(self,request): 
         try:
             self.update_scene()
             print request.cmd
