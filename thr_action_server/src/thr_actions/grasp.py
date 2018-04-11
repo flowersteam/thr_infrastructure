@@ -48,7 +48,7 @@ class Grasp(Action):
             angular_dist = transformations.distance_quat(world_approach_pose, new_world_approach_pose)
 
         # 1.ter. Sleep
-        rospy.sleep(1)
+        rospy.sleep(0.3)
 
         # 2. Go to "grasp" pose
         if self._should_interrupt():
@@ -64,7 +64,7 @@ class Grasp(Action):
             return False
 
         # 2.bis. Sleep
-        rospy.sleep(2)
+        rospy.sleep(0.1)
 
         # 3. Close gripper to grasp object
         if not self._should_interrupt():
